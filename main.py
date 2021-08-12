@@ -5,7 +5,7 @@ def make_list_of_df(data, dictionary):  # создаёт глобал df с кр
     data_list = []
     for items, values in dictionary.items():
         globals()[items] = data.query(
-            'name.str.lower().str.contains(@values) and ~name.str.lower().str.contains("пакб")')
+            'Наименование.str.lower().str.contains(@values) and ~Наименование.str.lower().str.contains("пакб")')
         if len(globals()[items]) > 0:
             data_list.append(items)
     return data_list
@@ -26,13 +26,13 @@ def screw_format():
 
     def screw_by_gost(container, part0, part2, part3):
         global screws
-        screw_gost = screws.query('name.str.contains(@container)')
+        screw_gost = screws.query('Наименование.str.contains(@container)')
         check_sum1 = screw_gost['count'].sum()
         screws = screws[~screws.index.isin(screw_gost.index)]
-        screw_gost['diameter'] = screw_gost['name'].apply(M_17475)
-        screw_gost['length'] = screw_gost['name'].apply(L_17475)
+        screw_gost['diameter'] = screw_gost['Наименование'].apply(M_17475)
+        screw_gost['length'] = screw_gost['Наименование'].apply(L_17475)
         screw_grouped = screw_gost.groupby(['diameter', 'length'])['count'].sum().reset_index()
-        screw_grouped['name'] = part0 + screw_grouped['diameter'] + part2 + \
+        screw_grouped['Наименование'] = part0 + screw_grouped['diameter'] + part2 + \
                                 screw_grouped['length'].apply(str) + part3
         screw_grouped['dimensions'] = 'M' + screw_grouped['diameter'] + 'x' + screw_grouped[
             'length'].apply(
@@ -71,12 +71,12 @@ def screw_format():
 def nuts_format():
     def nuts_by_gost(container, part0, part2):
         global nuts
-        nuts_gost = nuts.query('name.str.contains(@container)')
+        nuts_gost = nuts.query('Наименование.str.contains(@container)')
         checs_sum1 = nuts_gost['count'].sum()
         nuts = nuts[~nuts.index.isin(nuts_gost.index)]
-        nuts_gost['diameter'] = nuts_gost['name'].apply(M_17475)
+        nuts_gost['diameter'] = nuts_gost['Наименование'].apply(M_17475)
         nuts_grouped = nuts_gost.groupby(['diameter'])['count'].sum().reset_index()
-        nuts_grouped['name'] = part0 + nuts_grouped['diameter'] + part2
+        nuts_grouped['Наименование'] = part0 + nuts_grouped['diameter'] + part2
         nuts_grouped['dimensions'] = 'M' + nuts_grouped['diameter']
         nuts_grouped['gost'] = container
         checs_sum2 = nuts_grouped['count'].sum()
@@ -112,12 +112,12 @@ def washer_format():
 
     def washer_by_gost(container, part0, part2, apply_function):
         global washer
-        washer_gost = washer.query('name.str.contains(@container)')
+        washer_gost = washer.query('Наименование.str.contains(@container)')
         check_sum1 = washer_gost['count'].sum()
         washer = washer[~washer.index.isin(washer_gost.index)]
-        washer_gost['diameter'] = washer_gost['name'].apply(apply_function)
+        washer_gost['diameter'] = washer_gost['Наименование'].apply(apply_function)
         washer_grouped = washer_gost.groupby(['diameter'])['count'].sum().reset_index()
-        washer_grouped['name'] = part0 + washer_grouped['diameter'] + part2
+        washer_grouped['Наименование'] = part0 + washer_grouped['diameter'] + part2
         washer_grouped['dimensions'] = 'M' + washer_grouped['diameter']
         washer_grouped['gost'] = container
         check_sum2 = washer_grouped['count'].sum()
@@ -150,13 +150,13 @@ def pins_format():
 
     def pins_by_gost(container, part0, part2, part3):
         global pins
-        pins_gost = pins.query('name.str.contains(@container)')
+        pins_gost = pins.query('Наименование.str.contains(@container)')
         check_sum1 = pins_gost['count'].sum()
         pins = pins[~pins.index.isin(pins_gost.index)]
-        pins_gost['diameter'] = pins_gost['name'].apply(M)
-        pins_gost['length'] = pins_gost['name'].apply(L)
+        pins_gost['diameter'] = pins_gost['Наименование'].apply(M)
+        pins_gost['length'] = pins_gost['Наименование'].apply(L)
         pins_grouped = pins_gost.groupby(['diameter', 'length'])['count'].sum().reset_index()
-        pins_grouped['name'] = part0 + pins_grouped['diameter'] + part2 + \
+        pins_grouped['Наименование'] = part0 + pins_grouped['diameter'] + part2 + \
                                pins_grouped['length'].apply(str) + part3
         pins_grouped['dimensions'] = 'M' + pins_grouped['diameter'] + 'x' + pins_grouped['length'].apply(str)
         pins_grouped['gost'] = container
@@ -188,13 +188,13 @@ def vint_translit_format():
 
     def vint_by_gost(container, part0, part2, part3):
         global vint
-        vint_gost = vint.query('name.str.contains(@container)')
+        vint_gost = vint.query('Наименование.str.contains(@container)')
         check_sum1 = vint_gost['count'].sum()
         vint = vint[~vint.index.isin(vint_gost.index)]
-        vint_gost['diameter'] = vint_gost['name'].apply(M)
-        vint_gost['length'] = vint_gost['name'].apply(L)
+        vint_gost['diameter'] = vint_gost['Наименование'].apply(M)
+        vint_gost['length'] = vint_gost['Наименование'].apply(L)
         vint_grouped = vint_gost.groupby(['diameter', 'length'])['count'].sum().reset_index()
-        vint_grouped['name'] = part0 + vint_grouped['diameter'] + part2 + \
+        vint_grouped['Наименование'] = part0 + vint_grouped['diameter'] + part2 + \
                                vint_grouped['length'].apply(str) + part3
         vint_grouped['dimensions'] = 'M' + vint_grouped['diameter'] + 'x' + vint_grouped['length'].apply(str)
         vint_grouped['gost'] = container
@@ -225,7 +225,7 @@ import pandas as pd
 
 filename = 'sop_oe.csv'
 data = pd.read_csv(filename, encoding='ANSI', sep=';')
-data.columns = ['name', 'count']
+data.columns = ['Наименование', 'count']
 dictionary = {'screws': "винт", 'nuts': "гайка", 'washer': "шайба", 'pins': "штифт", 'vint': "vint", 'gajka': "gajka",
               'shajba': "shajba", 'shtift': "shtift"}
 data_list = make_list_of_df(data, dictionary)
@@ -241,11 +241,11 @@ print(all_screws['count'].sum() + all_vint['count'].sum())
 # объединяем латинские винты и обычные
 
 all_screws_and_vints = pd.concat([all_screws, all_vint]).reset_index(drop=True)
-duplicates = all_screws_and_vints.groupby('name')['count'].sum()
-all_screws_and_vints = all_screws_and_vints.merge(duplicates, on='name', how='left')
-all_screws_and_vints = all_screws_and_vints[['type', 'diameter', 'length', 'dimensions', 'gost', 'count_y', 'name']]
-all_screws_and_vints.columns = ['type', 'diameter', 'length', 'dimensions', 'gost', 'count', 'name']
-all_screws_and_vints = all_screws_and_vints.drop_duplicates('name')
+duplicates = all_screws_and_vints.groupby('Наименование')['count'].sum()
+all_screws_and_vints = all_screws_and_vints.merge(duplicates, on='Наименование', how='left')
+all_screws_and_vints = all_screws_and_vints[['type', 'diameter', 'length', 'dimensions', 'gost', 'count_y', 'Наименование']]
+all_screws_and_vints.columns = ['type', 'diameter', 'length', 'dimensions', 'gost', 'count', 'Наименование']
+all_screws_and_vints = all_screws_and_vints.drop_duplicates('Наименование')
 all_screws_and_vints = all_screws_and_vints.sort_values(by=['gost','diameter','length']).reset_index(drop=True)
 print(all_screws_and_vints['count'].sum())
 print(len(all_screws_and_vints), 'all_screws')
@@ -253,10 +253,10 @@ bad = pd.concat([screws, nuts, washer, pins, vint, gajka, shajba, shtift]).reset
 
 fileout = filename[0:-4] + '_out.xlsx'
 writer = pd.ExcelWriter(fileout, engine='xlsxwriter')
-all_screws_and_vints[['name', 'dimensions', 'count', 'gost']].to_excel(writer, 'Винты')
-all_nuts[['name', 'dimensions', 'count', 'gost']].to_excel(writer, 'Гайки')
-all_washer[['name', 'dimensions', 'count', 'gost']].to_excel(writer, 'Шайбы')
-all_pins[['name', 'dimensions', 'count', 'gost']].to_excel(writer, 'Штифты')
+all_screws_and_vints[['Наименование', 'dimensions', 'count', 'gost']].to_excel(writer, 'Винты')
+all_nuts[['Наименование', 'dimensions', 'count', 'gost']].to_excel(writer, 'Гайки')
+all_washer[['Наименование', 'dimensions', 'count', 'gost']].to_excel(writer, 'Шайбы')
+all_pins[['Наименование', 'dimensions', 'count', 'gost']].to_excel(writer, 'Штифты')
 bad.to_excel(writer, 'Не распозналось')
 for sheet_name in ['Винты', 'Гайки', 'Шайбы', 'Штифты', 'Не распозналось']:
     worksheet = writer.sheets[sheet_name]
