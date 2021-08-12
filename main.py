@@ -37,7 +37,7 @@ def screw_format():
         screw_grouped['dimensions'] = 'M' + screw_grouped['diameter'] + 'x' + screw_grouped[
             'length'].apply(
             str)
-        screw_grouped['gost'] = container
+        screw_grouped['ГОСТ/ОСТ'] = container
         check_sum2 = screw_grouped['count'].sum()
         screw_grouped['type'] = 'винт'
         screw_grouped.loc[screw_grouped['length'] == 0, 'dimensions'] = 'мелкий шаг'
@@ -78,7 +78,7 @@ def nuts_format():
         nuts_grouped = nuts_gost.groupby(['diameter'])['count'].sum().reset_index()
         nuts_grouped['Наименование'] = part0 + nuts_grouped['diameter'] + part2
         nuts_grouped['dimensions'] = 'M' + nuts_grouped['diameter']
-        nuts_grouped['gost'] = container
+        nuts_grouped['ГОСТ/ОСТ'] = container
         checs_sum2 = nuts_grouped['count'].sum()
         if checs_sum1 != checs_sum2:
             raise ValueError('потеряли гайку', container)
@@ -119,7 +119,7 @@ def washer_format():
         washer_grouped = washer_gost.groupby(['diameter'])['count'].sum().reset_index()
         washer_grouped['Наименование'] = part0 + washer_grouped['diameter'] + part2
         washer_grouped['dimensions'] = 'M' + washer_grouped['diameter']
-        washer_grouped['gost'] = container
+        washer_grouped['ГОСТ/ОСТ'] = container
         check_sum2 = washer_grouped['count'].sum()
         if check_sum1 != check_sum2:
             raise ValueError('потеряли шайбу', container)
@@ -159,7 +159,7 @@ def pins_format():
         pins_grouped['Наименование'] = part0 + pins_grouped['diameter'] + part2 + \
                                pins_grouped['length'].apply(str) + part3
         pins_grouped['dimensions'] = 'M' + pins_grouped['diameter'] + 'x' + pins_grouped['length'].apply(str)
-        pins_grouped['gost'] = container
+        pins_grouped['ГОСТ/ОСТ'] = container
         check_sum2 = pins_grouped['count'].sum()
         if check_sum1 != check_sum2:
             raise ValueError('потеряли штифт', container)
@@ -197,7 +197,7 @@ def vint_translit_format():
         vint_grouped['Наименование'] = part0 + vint_grouped['diameter'] + part2 + \
                                vint_grouped['length'].apply(str) + part3
         vint_grouped['dimensions'] = 'M' + vint_grouped['diameter'] + 'x' + vint_grouped['length'].apply(str)
-        vint_grouped['gost'] = container
+        vint_grouped['ГОСТ/ОСТ'] = container
         check_sum2 = vint_grouped['count'].sum()
         if check_sum1 != check_sum2:
             raise ValueError('потеряли vint', container)
@@ -243,20 +243,20 @@ print(all_screws['count'].sum() + all_vint['count'].sum())
 all_screws_and_vints = pd.concat([all_screws, all_vint]).reset_index(drop=True)
 duplicates = all_screws_and_vints.groupby('Наименование')['count'].sum()
 all_screws_and_vints = all_screws_and_vints.merge(duplicates, on='Наименование', how='left')
-all_screws_and_vints = all_screws_and_vints[['type', 'diameter', 'length', 'dimensions', 'gost', 'count_y', 'Наименование']]
-all_screws_and_vints.columns = ['type', 'diameter', 'length', 'dimensions', 'gost', 'count', 'Наименование']
+all_screws_and_vints = all_screws_and_vints[['type', 'diameter', 'length', 'dimensions', 'ГОСТ/ОСТ', 'count_y', 'Наименование']]
+all_screws_and_vints.columns = ['type', 'diameter', 'length', 'dimensions', 'ГОСТ/ОСТ', 'count', 'Наименование']
 all_screws_and_vints = all_screws_and_vints.drop_duplicates('Наименование')
-all_screws_and_vints = all_screws_and_vints.sort_values(by=['gost','diameter','length']).reset_index(drop=True)
+all_screws_and_vints = all_screws_and_vints.sort_values(by=['ГОСТ/ОСТ','diameter','length']).reset_index(drop=True)
 print(all_screws_and_vints['count'].sum())
 print(len(all_screws_and_vints), 'all_screws')
 bad = pd.concat([screws, nuts, washer, pins, vint, gajka, shajba, shtift]).reset_index(drop=True)
 
 fileout = filename[0:-4] + '_out.xlsx'
 writer = pd.ExcelWriter(fileout, engine='xlsxwriter')
-all_screws_and_vints[['Наименование', 'dimensions', 'count', 'gost']].to_excel(writer, 'Винты')
-all_nuts[['Наименование', 'dimensions', 'count', 'gost']].to_excel(writer, 'Гайки')
-all_washer[['Наименование', 'dimensions', 'count', 'gost']].to_excel(writer, 'Шайбы')
-all_pins[['Наименование', 'dimensions', 'count', 'gost']].to_excel(writer, 'Штифты')
+all_screws_and_vints[['Наименование', 'dimensions', 'count', 'ГОСТ/ОСТ']].to_excel(writer, 'Винты')
+all_nuts[['Наименование', 'dimensions', 'count', 'ГОСТ/ОСТ']].to_excel(writer, 'Гайки')
+all_washer[['Наименование', 'dimensions', 'count', 'ГОСТ/ОСТ']].to_excel(writer, 'Шайбы')
+all_pins[['Наименование', 'dimensions', 'count', 'ГОСТ/ОСТ']].to_excel(writer, 'Штифты')
 bad.to_excel(writer, 'Не распозналось')
 for sheet_name in ['Винты', 'Гайки', 'Шайбы', 'Штифты', 'Не распозналось']:
     worksheet = writer.sheets[sheet_name]
