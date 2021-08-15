@@ -45,23 +45,23 @@ def screw_format():
             raise ValueError('потеряли винт', container)
         return screw_grouped
 
-    screws1745 = screw_by_gost('17475', r'Винт А.М', r'-6gx', r'.58.20.016 ГОСТ 17475-80')
+    screws1745 = screw_by_gost('17475-80', r'Винт А.М', r'-6gx', r'.58.20.016 ГОСТ 17475-80')
 
-    screws1491 = screw_by_gost('1491', r'Винт А.М', r'-6gx', r'.58.20.016 ГОСТ 1491-80')
+    screws1491 = screw_by_gost('1491-80', r'Винт А.М', r'-6gx', r'.58.20.016 ГОСТ 1491-80')
 
     screws4762 = screw_by_gost('4762', 'Винт ГОСТ Р ИСО 4762-M', 'x', '.A2-70')
 
-    screw1477 = screw_by_gost('1477', r'Винт A.M', r'-6gx', r'.22H.35.016 ГОСТ 1477-93')
+    screw1477 = screw_by_gost('1477-93', r'Винт A.M', r'-6gx', r'.22H.35.016 ГОСТ 1477-93')
 
-    screw1476 = screw_by_gost('1476', r'Винт A.M', r'-6gx', r'.23.20Х13 ГОСТ 1476-93')
+    screw1476 = screw_by_gost('1476-93', r'Винт A.M', r'-6gx', r'.23.20Х13 ГОСТ 1476-93')
 
     screw2009 = screw_by_gost('2009', r'Винт с потайной головкой ГОСТ Р ИСО 2009 - М', 'x', r'.A2-70')
 
-    screw11644 = screw_by_gost('11644', r'Винт А.М', r'-6gx', r'.23.20Х13.11 ГОСТ 11644-75')
+    screw11644 = screw_by_gost('11644-75', r'Винт А.М', r'-6gx', r'.23.20Х13.11 ГОСТ 11644-75')
 
-    screw11074 = screw_by_gost('11074', r'Винт А.М', r'-6gx', r'.23.20Х13.11 ГОСТ 11074-93')
+    screw11074 = screw_by_gost('11074-93', r'Винт А.М', r'-6gx', r'.23.20Х13.11 ГОСТ 11074-93')
 
-    screw1479 = screw_by_gost('1479', r'Винт A.M', r'-6gx', r'.23.20Х13 ГОСТ 1479-93')
+    screw1479 = screw_by_gost('1479-93', r'Винт A.M', r'-6gx', r'.23.20Х13 ГОСТ 1479-93')
 
     all_screws = pd.concat([screws1745, screws1491, screws4762, screw1477, screw1476, screw2009, screw11644, screw11074,
                             screw1479]).reset_index(drop=True)
@@ -85,7 +85,7 @@ def nuts_format():
         nuts_grouped['type'] = 'гайка'
         return nuts_grouped
 
-    nuts5927 = nuts_by_gost('5927', 'Гайка М', '-6H.5.20.016 ГОСТ 5927-70')
+    nuts5927 = nuts_by_gost('5927-70', 'Гайка М', '-6H.5.20.016 ГОСТ 5927-70')
     all_nuts = nuts5927
     return all_nuts
 
@@ -126,11 +126,11 @@ def washer_format():
         washer_grouped['type'] = 'шайба'
         return washer_grouped
 
-    washer10450 = washer_by_gost('10450', 'Шайба А', '.01.019 ГОСТ 10405-78', M_washer)
+    washer10450 = washer_by_gost('10450-78', 'Шайба А', '.01.019 ГОСТ 10405-78', M_washer)
 
-    washer11371 = washer_by_gost('11371', 'Шайба А', '.01.019 ГОСТ 11371-78', M_washer)
+    washer11371 = washer_by_gost('11371-78', 'Шайба А', '.01.019 ГОСТ 11371-78', M_washer)
 
-    washer6402 = washer_by_gost('6402', 'Шайба А', '.01.019 ГОСТ 6402-70', M_washer6402)
+    washer6402 = washer_by_gost('6402-70', 'Шайба А', '.01.019 ГОСТ 6402-70', M_washer6402)
 
     all_washer = pd.concat([washer10450, washer11371, washer6402]).reset_index(drop=True)
     return all_washer
@@ -166,7 +166,7 @@ def pins_format():
         pins_grouped['type'] = 'штифт'
         return pins_grouped
 
-    pins3128 = pins_by_gost('3128', r'Штифт ', 'x', r'.Хим.Окс.прм. ГОСТ 3128-70')
+    pins3128 = pins_by_gost('3128-70', r'Штифт ', 'x', r'.Хим.Окс.прм. ГОСТ 3128-70')
 
     all_pins = pins3128
     return all_pins
@@ -206,15 +206,15 @@ def vint_translit_format():
 
     vint4762 = vint_by_gost('4762', 'Винт ГОСТ Р ИСО 4762-M', 'x', '.A2-70')
 
-    vint1491 = vint_by_gost('1491', r'Винт А.М', r'-6gx', r'.58.20.016 ГОСТ 1491-80')
+    vint1491 = vint_by_gost('1491-80', r'Винт А.М', r'-6gx', r'.58.20.016 ГОСТ 1491-80')
 
-    vint17475 = vint_by_gost('17475', r'Винт А.М', r'-6gx', r'.58.20.016 ГОСТ 17475-80')
+    vint17475 = vint_by_gost('17475-80', r'Винт А.М', r'-6gx', r'.58.20.016 ГОСТ 17475-80')
 
-    vint1477 = vint_by_gost('1477', r'Винт A.M', r'-6gx', r'.22H.35.016 ГОСТ 1477-93')
+    vint1477 = vint_by_gost('1477-93', r'Винт A.M', r'-6gx', r'.22H.35.016 ГОСТ 1477-93')
 
-    vint1476 = vint_by_gost('1476', r'Винт A.M', r'-6gx', r'.23.20Х13 ГОСТ 1476-93')
+    vint1476 = vint_by_gost('1476-93', r'Винт A.M', r'-6gx', r'.23.20Х13 ГОСТ 1476-93')
 
-    vint11738 = vint_by_gost('11738', r'Винт M', r'-6gx', r'.23.20Х13 ГОСТ 11738-84')
+    vint11738 = vint_by_gost('11738-84', r'Винт M', r'-6gx', r'.23.20Х13 ГОСТ 11738-84')
 
     all_vint = pd.concat([vint4762, vint1491, vint17475, vint1477, vint1476, vint11738]).reset_index(drop=True)
 
