@@ -253,15 +253,15 @@ bad = pd.concat([screws, nuts, washer, pins, vint, gajka, shajba, shtift]).reset
 
 fileout = filename[0:-4] + '_out.xlsx'
 writer = pd.ExcelWriter(fileout, engine='xlsxwriter')
-all_screws_and_vints[['Наименование', 'Размер', 'Количество', 'ГОСТ/ОСТ']].to_excel(writer, 'Винты')
-all_nuts[['Наименование', 'Размер', 'Количество', 'ГОСТ/ОСТ']].to_excel(writer, 'Гайки')
-all_washer[['Наименование', 'Размер', 'Количество', 'ГОСТ/ОСТ']].to_excel(writer, 'Шайбы')
-all_pins[['Наименование', 'Размер', 'Количество', 'ГОСТ/ОСТ']].to_excel(writer, 'Штифты')
+all_screws_and_vints[['Наименование', 'ГОСТ/ОСТ', 'Размер', 'Количество']].to_excel(writer, 'Винты')
+all_nuts[['Наименование', 'ГОСТ/ОСТ', 'Размер', 'Количество']].to_excel(writer, 'Гайки')
+all_washer[['Наименование', 'ГОСТ/ОСТ', 'Размер', 'Количество']].to_excel(writer, 'Шайбы')
+all_pins[['Наименование', 'ГОСТ/ОСТ', 'Размер', 'Количество']].to_excel(writer, 'Штифты')
 bad.to_excel(writer, 'Не распозналось')
 for sheet_name in ['Винты', 'Гайки', 'Шайбы', 'Штифты', 'Не распозналось']:
     worksheet = writer.sheets[sheet_name]
     worksheet.set_column(1, 1, 50)
-    worksheet.set_column(2, 2, 10)
-    worksheet.set_column(3, 3, 10)
+    worksheet.set_column(2, 4, 10)
+   # worksheet.set_column(3, 3, 10)
     worksheet.set_default_row(20)
 writer.save()
