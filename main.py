@@ -1,4 +1,5 @@
 import re
+import pandas as pd
 
 
 def make_list_of_df(data, dictionary):  # создаёт глобальные df с крепежом если они не пустые
@@ -207,8 +208,6 @@ def vint_translit_format():  # разбор старых винтов из Creo 
 
     return all_vint
 
-
-import pandas as pd
 
 filename = 'sop_oe.csv'
 data = pd.read_csv(filename, encoding='ANSI', sep=';')
