@@ -24,6 +24,7 @@ def get_diameter(row, regular_expression, symbols_to_delete):  # диаметр 
         anwser = anwser[0:-1]
     return anwser
 
+
 def get_length(row):  # длина винта или штифта
     temp = re.search('[xх]\d+', row)
     return int(temp.group()[1:])
@@ -31,7 +32,6 @@ def get_length(row):  # длина винта или штифта
 
 def screw_format():
     regular_expression = '[МM]\d+\.*[56]*'  # регулярка для поиска диаметра винта
-
 
     def screw_by_gost(container, part0, part2, part3):
         global screws
@@ -134,13 +134,13 @@ def pins_format():
     regular_expression = 'ифт \d+\.*[56]*'
     symbols_to_delete = 4
 
-
     def pins_by_gost(container, part0, part2, part3):
         global pins
         pins_gost = pins.query('Наименование.str.contains(@container)')
         check_sum1 = pins_gost['Кол.'].sum()
         pins = pins[~pins.index.isin(pins_gost.index)]
-        pins_gost['diameter'] = pins_gost['Наименование'].apply(get_diameter, args=(regular_expression,symbols_to_delete))
+        pins_gost['diameter'] = pins_gost['Наименование'].apply(get_diameter,
+                                                                args=(regular_expression, symbols_to_delete))
         pins_gost['length'] = pins_gost['Наименование'].apply(get_length)
         pins_grouped = pins_gost.groupby(['diameter', 'length'])['Кол.'].sum().reset_index()
         pins_grouped['Наименование'] = part0 + pins_grouped['diameter'] + part2 + \
@@ -159,7 +159,7 @@ def pins_format():
     return all_pins
 
 
-def vint_translit_format(): # разбор старых винтов из Creo записаных транслитом
+def vint_translit_format():  # разбор старых винтов из Creo записаных транслитом
     def M(row):  # диаметр винта
         temp = re.search('M\d+[-_]*[56]*', row)
         anwser = temp.group()[1:]
