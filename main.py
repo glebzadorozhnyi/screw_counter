@@ -1,8 +1,11 @@
 import re
 import pandas as pd
 
+def make_list_of_samples(filename):
+    return pd.read_csv(filename, encoding='ANSI', sep=';')
 
-def make_list_of_df(data, dictionary):  # создаёт глобальные df с крепежом если они не пустые
+
+def make_list_of_fasteners(data, dictionary):  # создаёт глобальные df с крепежом если они не пустые
     # возвращает список с названиями df
     # каждому виду крепежа соответствует свой df
     data_list = []
@@ -208,13 +211,14 @@ def vint_translit_format():  # разбор старых винтов из Creo 
 
     return all_vint
 
+#начало мэйна
 
 filename = 'sop_oe.csv'
 data = pd.read_csv(filename, encoding='ANSI', sep=';')
 data.columns = ['Наименование', 'Кол.']
 dictionary = {'screws': "винт", 'nuts': "гайка", 'washer': "шайба", 'pins': "штифт", 'vint': "vint", 'gajka': "gajka",
               'shajba': "shajba", 'shtift': "shtift"}
-data_list = make_list_of_df(data, dictionary)
+data_list = make_list_of_fasteners(data, dictionary)
 all_screws = screw_format()
 all_nuts = nuts_format()
 print(len(all_nuts), 'all_nuts')
