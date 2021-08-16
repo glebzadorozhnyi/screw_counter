@@ -1,7 +1,9 @@
 import re
 
 
-def make_list_of_df(data, dictionary):  # создаёт глобал df с крепежом если не пустые. возвращает список с названиями df. Каждому виду крепежа свой df
+def make_list_of_df(data, dictionary):  # создаёт глобальные df с крепежом если они не пустые
+    # возвращает список с названиями df
+    # каждому виду крепежа соответствует свой df
     data_list = []
     for items, values in dictionary.items():
         globals()[items] = data.query(
@@ -22,13 +24,14 @@ def get_diameter(row, regular_expression, symbols_to_delete):  # диаметр 
         anwser = anwser[0:-1]
     return anwser
 
+def get_length(row):  # длина винта или штифта
+    temp = re.search('[xх]\d+', row)
+    return int(temp.group()[1:])
+
 
 def screw_format():
     regular_expression = '[МM]\d+\.*[56]*'  # регулярка для поиска диаметра винта
 
-    def L_17475(row):  # длина винта
-        temp = re.search('[xх]\d+', row)
-        return int(temp.group()[1:])
 
     def screw_by_gost(container, part0, part2, part3):
         global screws
@@ -36,7 +39,7 @@ def screw_format():
         check_sum1 = screw_gost['Кол.'].sum()
         screws = screws[~screws.index.isin(screw_gost.index)]
         screw_gost['diameter'] = screw_gost['Наименование'].apply(get_diameter, args=(regular_expression, 1))
-        screw_gost['length'] = screw_gost['Наименование'].apply(L_17475)
+        screw_gost['length'] = screw_gost['Наименование'].apply(get_length)
         screw_grouped = screw_gost.groupby(['diameter', 'length'])['Кол.'].sum().reset_index()
         screw_grouped['Наименование'] = part0 + screw_grouped['diameter'] + part2 + \
                                         screw_grouped['length'].apply(str) + part3
@@ -131,9 +134,6 @@ def pins_format():
     regular_expression = 'ифт \d+\.*[56]*'
     symbols_to_delete = 4
 
-    def L(row):  # длина штифта
-        temp = re.search('[xх]\d+', row)
-        return int(temp.group()[1:])
 
     def pins_by_gost(container, part0, part2, part3):
         global pins
@@ -141,7 +141,7 @@ def pins_format():
         check_sum1 = pins_gost['Кол.'].sum()
         pins = pins[~pins.index.isin(pins_gost.index)]
         pins_gost['diameter'] = pins_gost['Наименование'].apply(get_diameter, args=(regular_expression,symbols_to_delete))
-        pins_gost['length'] = pins_gost['Наименование'].apply(L)
+        pins_gost['length'] = pins_gost['Наименование'].apply(get_length)
         pins_grouped = pins_gost.groupby(['diameter', 'length'])['Кол.'].sum().reset_index()
         pins_grouped['Наименование'] = part0 + pins_grouped['diameter'] + part2 + \
                                        pins_grouped['length'].apply(str) + part3
@@ -159,7 +159,7 @@ def pins_format():
     return all_pins
 
 
-def vint_translit_format():
+def vint_translit_format(): # разбор старых винтов из Creo записаных транслитом
     def M(row):  # диаметр винта
         temp = re.search('M\d+[-_]*[56]*', row)
         anwser = temp.group()[1:]
