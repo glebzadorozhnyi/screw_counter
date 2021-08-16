@@ -86,7 +86,8 @@ def nuts_format():
         return nuts_grouped
 
     nuts5927 = nuts_by_gost('5927-70', 'Гайка М', '-6H.5.20.016 ГОСТ 5927-70')
-    all_nuts = nuts5927
+    nuts5929 = nuts_by_gost('5929-70', 'Гайка М', '-6H.5.20.016 ГОСТ 5929-70')
+    all_nuts = pd.concat([nuts5927, nuts5929]).reset_index(drop=True)
     return all_nuts
 
 
