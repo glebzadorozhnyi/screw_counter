@@ -11,7 +11,7 @@ def make_list_of_df(data, dictionary):  # создаёт глобал df с кр
     return data_list
 
 
-def M_17475(row):  # диаметр винта, да и гайки тоже
+def get_diameter(row):  # диаметр винта или гайки
     temp = re.search('[МM]\d+\.*[56]*', row)
     anwser = temp.group()[1:]
     if anwser[0] > '2':
@@ -29,7 +29,7 @@ def screw_format():
         screw_gost = screws.query('Наименование.str.contains(@container)')
         check_sum1 = screw_gost['Кол.'].sum()
         screws = screws[~screws.index.isin(screw_gost.index)]
-        screw_gost['diameter'] = screw_gost['Наименование'].apply(M_17475)
+        screw_gost['diameter'] = screw_gost['Наименование'].apply(get_diameter)
         screw_gost['length'] = screw_gost['Наименование'].apply(L_17475)
         screw_grouped = screw_gost.groupby(['diameter', 'length'])['Кол.'].sum().reset_index()
         screw_grouped['Наименование'] = part0 + screw_grouped['diameter'] + part2 + \
@@ -74,7 +74,7 @@ def nuts_format():
         nuts_gost = nuts.query('Наименование.str.contains(@container)')
         checs_sum1 = nuts_gost['Кол.'].sum()
         nuts = nuts[~nuts.index.isin(nuts_gost.index)]
-        nuts_gost['diameter'] = nuts_gost['Наименование'].apply(M_17475)
+        nuts_gost['diameter'] = nuts_gost['Наименование'].apply(get_diameter)
         nuts_grouped = nuts_gost.groupby(['diameter'])['Кол.'].sum().reset_index()
         nuts_grouped['Наименование'] = part0 + nuts_grouped['diameter'] + part2
         nuts_grouped['Размер'] = 'M' + nuts_grouped['diameter']
