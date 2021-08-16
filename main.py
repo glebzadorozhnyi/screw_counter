@@ -1,7 +1,7 @@
 import re
 
 
-def make_list_of_df(data, dictionary):  # создаёт глобал df с крепежом если не пустые. возвращает список с названиями df
+def make_list_of_df(data, dictionary):  # создаёт глобал df с крепежом если не пустые. возвращает список с названиями df. Каждому виду крепежа свой df
     data_list = []
     for items, values in dictionary.items():
         globals()[items] = data.query(
@@ -11,15 +11,21 @@ def make_list_of_df(data, dictionary):  # создаёт глобал df с кр
     return data_list
 
 
-def get_diameter(row):  # диаметр винта или гайки
-    temp = re.search('[МM]\d+\.*[56]*', row)
-    anwser = temp.group()[1:]
+def get_diameter(row, regular_expression, symbols_to_delete):  # диаметр крепежа
+    # regular_expression - регулярка для поиска диаметра крепежа
+    # symbols_to_delete - количество первых символов, которые нужно удалять из найденной регулярки
+    temp = re.search(regular_expression, row)
+    anwser = temp.group()[symbols_to_delete:]
     if anwser[0] > '2':
         anwser = anwser[0]
+    if anwser.endswith('.'):
+        anwser = anwser[0:-1]
     return anwser
 
 
 def screw_format():
+    regular_expression = '[МM]\d+\.*[56]*'  # регулярка для поиска диаметра винта
+
     def L_17475(row):  # длина винта
         temp = re.search('[xх]\d+', row)
         return int(temp.group()[1:])
@@ -29,11 +35,11 @@ def screw_format():
         screw_gost = screws.query('Наименование.str.contains(@container)')
         check_sum1 = screw_gost['Кол.'].sum()
         screws = screws[~screws.index.isin(screw_gost.index)]
-        screw_gost['diameter'] = screw_gost['Наименование'].apply(get_diameter)
+        screw_gost['diameter'] = screw_gost['Наименование'].apply(get_diameter, args=(regular_expression, 1))
         screw_gost['length'] = screw_gost['Наименование'].apply(L_17475)
         screw_grouped = screw_gost.groupby(['diameter', 'length'])['Кол.'].sum().reset_index()
         screw_grouped['Наименование'] = part0 + screw_grouped['diameter'] + part2 + \
-                                screw_grouped['length'].apply(str) + part3
+                                        screw_grouped['length'].apply(str) + part3
         screw_grouped['Размер'] = 'M' + screw_grouped['diameter'] + 'x' + screw_grouped[
             'length'].apply(
             str)
@@ -69,12 +75,14 @@ def screw_format():
 
 
 def nuts_format():
+    regular_expression = '[МM]\d+\.*[56]*'  # поиск диаметра гайки
+
     def nuts_by_gost(container, part0, part2):
         global nuts
         nuts_gost = nuts.query('Наименование.str.contains(@container)')
         checs_sum1 = nuts_gost['Кол.'].sum()
         nuts = nuts[~nuts.index.isin(nuts_gost.index)]
-        nuts_gost['diameter'] = nuts_gost['Наименование'].apply(get_diameter)
+        nuts_gost['diameter'] = nuts_gost['Наименование'].apply(get_diameter, args=(regular_expression, 1))
         nuts_grouped = nuts_gost.groupby(['diameter'])['Кол.'].sum().reset_index()
         nuts_grouped['Наименование'] = part0 + nuts_grouped['diameter'] + part2
         nuts_grouped['Размер'] = 'M' + nuts_grouped['diameter']
@@ -92,31 +100,13 @@ def nuts_format():
 
 
 def washer_format():
-    def M_washer(row):
-        temp = re.search('[AА]\.\d+\.*[56]*', row)
-        anwser = temp.group()[2:]
-
-        if anwser[0] > '2':
-            anwser = anwser[0]
-        if anwser.endswith('.'):
-            anwser = anwser[0:-1]
-        return anwser
-
-    def M_washer6402(row):
-        temp = re.search('йба \d+\.*[56]*', row)
-        anwser = temp.group()[4:]
-        if anwser[0] > '2':
-            anwser = anwser[0]
-        if anwser.endswith('.'):
-            anwser = anwser[0:-1]
-        return anwser
-
-    def washer_by_gost(container, part0, part2, apply_function):
+    def washer_by_gost(container, part0, part2, regular_expression, symbols_to_delete):
         global washer
         washer_gost = washer.query('Наименование.str.contains(@container)')
         check_sum1 = washer_gost['Кол.'].sum()
         washer = washer[~washer.index.isin(washer_gost.index)]
-        washer_gost['diameter'] = washer_gost['Наименование'].apply(apply_function)
+        washer_gost['diameter'] = washer_gost['Наименование'].apply(get_diameter,
+                                                                    args=(regular_expression, symbols_to_delete))
         washer_grouped = washer_gost.groupby(['diameter'])['Кол.'].sum().reset_index()
         washer_grouped['Наименование'] = part0 + washer_grouped['diameter'] + part2
         washer_grouped['Размер'] = 'M' + washer_grouped['diameter']
@@ -127,23 +117,19 @@ def washer_format():
         washer_grouped['type'] = 'шайба'
         return washer_grouped
 
-    washer10450 = washer_by_gost('10450-78', 'Шайба А', '.01.019 ГОСТ 10405-78', M_washer)
+    washer10450 = washer_by_gost('10450-78', 'Шайба А', '.01.019 ГОСТ 10405-78', '[AА]\.\d+\.*[56]*', 2)
 
-    washer11371 = washer_by_gost('11371-78', 'Шайба А', '.01.019 ГОСТ 11371-78', M_washer)
+    washer11371 = washer_by_gost('11371-78', 'Шайба А', '.01.019 ГОСТ 11371-78', '[AА]\.\d+\.*[56]*', 2)
 
-    washer6402 = washer_by_gost('6402-70', 'Шайба А', '.01.019 ГОСТ 6402-70', M_washer6402)
+    washer6402 = washer_by_gost('6402-70', 'Шайба А', '.01.019 ГОСТ 6402-70', 'йба \d+\.*[56]*', 4)
 
     all_washer = pd.concat([washer10450, washer11371, washer6402]).reset_index(drop=True)
     return all_washer
 
 
 def pins_format():
-    def M(row):  # диаметр штифта
-        temp = re.search('ифт \d+\.*[56]*', row)
-        anwser = temp.group()[4:]
-        if anwser[0] > '2':
-            anwser = anwser[0]
-        return anwser
+    regular_expression = 'ифт \d+\.*[56]*'
+    symbols_to_delete = 4
 
     def L(row):  # длина штифта
         temp = re.search('[xх]\d+', row)
@@ -154,11 +140,11 @@ def pins_format():
         pins_gost = pins.query('Наименование.str.contains(@container)')
         check_sum1 = pins_gost['Кол.'].sum()
         pins = pins[~pins.index.isin(pins_gost.index)]
-        pins_gost['diameter'] = pins_gost['Наименование'].apply(M)
+        pins_gost['diameter'] = pins_gost['Наименование'].apply(get_diameter, args=(regular_expression,symbols_to_delete))
         pins_gost['length'] = pins_gost['Наименование'].apply(L)
         pins_grouped = pins_gost.groupby(['diameter', 'length'])['Кол.'].sum().reset_index()
         pins_grouped['Наименование'] = part0 + pins_grouped['diameter'] + part2 + \
-                               pins_grouped['length'].apply(str) + part3
+                                       pins_grouped['length'].apply(str) + part3
         pins_grouped['Размер'] = 'M' + pins_grouped['diameter'] + 'x' + pins_grouped['length'].apply(str)
         pins_grouped['ГОСТ/ОСТ'] = container
         check_sum2 = pins_grouped['Кол.'].sum()
@@ -174,7 +160,7 @@ def pins_format():
 
 
 def vint_translit_format():
-    def M(row):  # диаметр штифта
+    def M(row):  # диаметр винта
         temp = re.search('M\d+[-_]*[56]*', row)
         anwser = temp.group()[1:]
         anwser = anwser.replace('_', '.')
@@ -183,7 +169,7 @@ def vint_translit_format():
             anwser = anwser[0]
         return anwser
 
-    def L(row):  # длина штифта
+    def L(row):  # длина винта
         temp = re.search('X\d+', row)
         return int(temp.group()[1:])
 
@@ -196,7 +182,7 @@ def vint_translit_format():
         vint_gost['length'] = vint_gost['Наименование'].apply(L)
         vint_grouped = vint_gost.groupby(['diameter', 'length'])['Кол.'].sum().reset_index()
         vint_grouped['Наименование'] = part0 + vint_grouped['diameter'] + part2 + \
-                               vint_grouped['length'].apply(str) + part3
+                                       vint_grouped['length'].apply(str) + part3
         vint_grouped['Размер'] = 'M' + vint_grouped['diameter'] + 'x' + vint_grouped['length'].apply(str)
         vint_grouped['ГОСТ/ОСТ'] = container
         check_sum2 = vint_grouped['Кол.'].sum()
@@ -244,10 +230,11 @@ print(all_screws['Кол.'].sum() + all_vint['Кол.'].sum())
 all_screws_and_vints = pd.concat([all_screws, all_vint]).reset_index(drop=True)
 duplicates = all_screws_and_vints.groupby('Наименование')['Кол.'].sum()
 all_screws_and_vints = all_screws_and_vints.merge(duplicates, on='Наименование', how='left')
-all_screws_and_vints = all_screws_and_vints[['type', 'diameter', 'length', 'Размер', 'ГОСТ/ОСТ', 'Кол._y', 'Наименование']]
+all_screws_and_vints = all_screws_and_vints[
+    ['type', 'diameter', 'length', 'Размер', 'ГОСТ/ОСТ', 'Кол._y', 'Наименование']]
 all_screws_and_vints.columns = ['type', 'diameter', 'length', 'Размер', 'ГОСТ/ОСТ', 'Кол.', 'Наименование']
 all_screws_and_vints = all_screws_and_vints.drop_duplicates('Наименование')
-all_screws_and_vints = all_screws_and_vints.sort_values(by=['ГОСТ/ОСТ','diameter','length']).reset_index(drop=True)
+all_screws_and_vints = all_screws_and_vints.sort_values(by=['ГОСТ/ОСТ', 'diameter', 'length']).reset_index(drop=True)
 print(all_screws_and_vints['Кол.'].sum())
 print(len(all_screws_and_vints), 'all_screws')
 bad = pd.concat([screws, nuts, washer, pins, vint, gajka, shajba, shtift]).reset_index(drop=True)
