@@ -1,4 +1,4 @@
-type;container;part0;part1;part2;part3;regular_expression;symbols to delete
+type;container;part0;part1;part2;part3;regular_expression;symbols_to_delete
 винт;17475-80;Винт А.М;;-6gx;.58.20.016 ГОСТ 17475-80;[МM]\d+\.*[56]*;1
 винт;1491-80;Винт А.М;;-6gx;.58.20.016 ГОСТ 1491-80;[МM]\d+\.*[56]*;1
 винт;4762;Винт ГОСТ Р ИСО 4762-M;;x;.A2-70;[МM]\d+\.*[56]*;1
