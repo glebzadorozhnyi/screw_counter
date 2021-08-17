@@ -1,22 +1,25 @@
 import re
 import pandas as pd
 
-def make_list_of_samples(filename):
+def make_list_of_samples(filename): #читаем список шаблонов крепежа в df
     return pd.read_csv(filename, encoding='ANSI', sep=';')
 
 
-def make_list_of_fasteners(filename, dictionary):  # создаёт глобальные df с крепежом если они не пустые
-    # возвращает список с названиями df
-    # каждому виду крепежа соответствует свой df
+
+def make_good_list_of_fasteners(filename,dictionary):
+    # проходим весь входной csv файл
+    # выбираем строки, в которых есть ключевые слова-type из dictionary и нет "пакб"
+    # возвращаем df где есть только строки с крепежём
     data = pd.read_csv(filename, encoding='ANSI', sep=';')
     data.columns = ['Наименование', 'Кол.']
-    data_list = []
-    for items, values in dictionary.items():
-        globals()[items] = data.query(
-            'Наименование.str.lower().str.contains(@values) and ~Наименование.str.lower().str.contains("пакб")')
-        if len(globals()[items]) > 0:
-            data_list.append(items)
-    return data_list
+    list_of_df = []
+    for type in dictionary:
+        temp_df = data.query('Наименование.str.lower().str.contains(@type) and ~Наименование.str.lower().str.contains("пакб")')
+        temp_df['type'] = type
+        if len(temp_df) > 0:
+            list_of_df.append(temp_df)
+    return pd.concat([*list_of_df]).reset_index(drop=True)
+
 
 
 def get_diameter(row, regular_expression, symbols_to_delete):  # диаметр крепежа
@@ -34,6 +37,13 @@ def get_diameter(row, regular_expression, symbols_to_delete):  # диаметр 
 def get_length(row):  # длина винта или штифта
     temp = re.search('[xх]\d+', row)
     return int(temp.group()[1:])
+
+#def fasteners2d(data,container):
+    # приводит наименования крепежа к единному образцу
+    # группирует крепёж с одинаковым наименованием
+    # используется для крепежа у которого два размера: длина и диаметр (винты, штрифты, болты)
+   # fasteners_gost =
+
 
 
 def screw_format():
@@ -218,6 +228,7 @@ def vint_translit_format():  # разбор старых винтов из Creo 
 filename = 'sop_oe.csv'
 dictionary = {'screws': "винт", 'nuts': "гайка", 'washer': "шайба", 'pins': "штифт", 'vint': "vint", 'gajka': "gajka",
               'shajba': "shajba", 'shtift': "shtift"}
+true_dictionary = ['винт', 'гайка', 'шайба', 'штифт', 'vint', 'gajka', 'shajba', 'shtift']
 data_list = make_list_of_fasteners(filename, dictionary)
 all_screws = screw_format()
 all_nuts = nuts_format()
@@ -256,3 +267,4 @@ for sheet_name in ['Винты', 'Гайки', 'Шайбы', 'Штифты', 'Н
     worksheet.set_column(2, 2, 10)
     worksheet.set_default_row(20)
 writer.save()
+make_good_list_of_fasteners('sop_oe.csv',true_dictionary)
