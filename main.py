@@ -1,12 +1,12 @@
 import re
 import pandas as pd
 
-def make_list_of_samples(filename): #читаем список шаблонов крепежа в df
+def make_list_of_samples(filename):
+    # читаем список шаблонов крепежа в df
     return pd.read_csv(filename, encoding='ANSI', sep=';')
 
 
-
-def make_good_list_of_fasteners(filename,dictionary):
+def parsing_df_of_fasteners(filename, dictionary):
     # проходим весь входной csv файл
     # выбираем строки, в которых есть ключевые слова-type из dictionary и нет "пакб"
     # возвращаем df где есть только строки с крепежём
@@ -19,7 +19,6 @@ def make_good_list_of_fasteners(filename,dictionary):
         if len(temp_df) > 0:
             list_of_df.append(temp_df)
     return pd.concat([*list_of_df]).reset_index(drop=True)
-
 
 
 def get_diameter(row, regular_expression, symbols_to_delete):  # диаметр крепежа
@@ -38,11 +37,9 @@ def get_length(row):  # длина винта или штифта
     temp = re.search('[xх]\d+', row)
     return int(temp.group()[1:])
 
-#def fasteners2d(data,container):
-    # приводит наименования крепежа к единному образцу
-    # группирует крепёж с одинаковым наименованием
-    # используется для крепежа у которого два размера: длина и диаметр (винты, штрифты, болты)
-   # fasteners_gost =
+def normalization(list_of_samples, df):
+    pass
+
 
 
 
@@ -50,7 +47,7 @@ def screw_format():
     regular_expression = '[МM]\d+\.*[56]*'  # регулярка для поиска диаметра винта
 
     def screw_by_gost(container, part0, part2, part3):
-        global screws
+        screws = parsing_df_of_fasteners[parsing_df_of_fasteners['type'] == 'винт']
         screw_gost = screws.query('Наименование.str.contains(@container)')
         check_sum1 = screw_gost['Кол.'].sum()
         screws = screws[~screws.index.isin(screw_gost.index)]
@@ -226,45 +223,6 @@ def vint_translit_format():  # разбор старых винтов из Creo 
 #начало мэйна
 
 filename = 'sop_oe.csv'
-dictionary = {'screws': "винт", 'nuts': "гайка", 'washer': "шайба", 'pins': "штифт", 'vint': "vint", 'gajka': "gajka",
-              'shajba': "shajba", 'shtift': "shtift"}
 true_dictionary = ['винт', 'гайка', 'шайба', 'штифт', 'vint', 'gajka', 'shajba', 'shtift']
-data_list = make_list_of_fasteners(filename, dictionary)
-all_screws = screw_format()
-all_nuts = nuts_format()
-print(len(all_nuts), 'all_nuts')
-all_washer = washer_format()
-print(len(all_washer), 'all_washer')
-all_pins = pins_format()
-print(len(all_pins), 'all_pins')
-all_vint = vint_translit_format()
-print(all_screws['Кол.'].sum() + all_vint['Кол.'].sum())
-# объединяем латинские винты и обычные
+data = parsing_df_of_fasteners(filename, true_dictionary)
 
-all_screws_and_vints = pd.concat([all_screws, all_vint]).reset_index(drop=True)
-duplicates = all_screws_and_vints.groupby('Наименование')['Кол.'].sum()
-all_screws_and_vints = all_screws_and_vints.merge(duplicates, on='Наименование', how='left')
-all_screws_and_vints = all_screws_and_vints[
-    ['type', 'diameter', 'length', 'Размер', 'ГОСТ/ОСТ', 'Кол._y', 'Наименование']]
-all_screws_and_vints.columns = ['type', 'diameter', 'length', 'Размер', 'ГОСТ/ОСТ', 'Кол.', 'Наименование']
-all_screws_and_vints = all_screws_and_vints.drop_duplicates('Наименование')
-all_screws_and_vints = all_screws_and_vints.sort_values(by=['ГОСТ/ОСТ', 'diameter', 'length']).reset_index(drop=True)
-print(all_screws_and_vints['Кол.'].sum())
-print(len(all_screws_and_vints), 'all_screws')
-bad = pd.concat([screws, nuts, washer, pins, vint, gajka, shajba, shtift]).reset_index(drop=True)
-
-fileout = filename[0:-4] + '_out.xlsx'
-writer = pd.ExcelWriter(fileout, engine='xlsxwriter')
-all_screws_and_vints['Прим.'] = ' '
-all_screws_and_vints[['Наименование', 'ГОСТ/ОСТ', 'Размер', 'Кол.', 'Прим.']].to_excel(writer, 'Винты')
-all_nuts[['Наименование', 'ГОСТ/ОСТ', 'Размер', 'Кол.']].to_excel(writer, 'Гайки')
-all_washer[['Наименование', 'ГОСТ/ОСТ', 'Размер', 'Кол.']].to_excel(writer, 'Шайбы')
-all_pins[['Наименование', 'ГОСТ/ОСТ', 'Размер', 'Кол.']].to_excel(writer, 'Штифты')
-bad.to_excel(writer, 'Не распозналось')
-for sheet_name in ['Винты', 'Гайки', 'Шайбы', 'Штифты', 'Не распозналось']:
-    worksheet = writer.sheets[sheet_name]
-    worksheet.set_column(1, 1, 50)
-    worksheet.set_column(2, 2, 10)
-    worksheet.set_default_row(20)
-writer.save()
-make_good_list_of_fasteners('sop_oe.csv',true_dictionary)
