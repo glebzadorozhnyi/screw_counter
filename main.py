@@ -73,7 +73,7 @@ def normalization(list_of_samples, df):
     return pd.concat([*list_of_df]).reset_index(drop=True), df
 
 
-def vint_translit_format(list_of_samples, df):
+def vint_translit_normalization(list_of_samples, df):
     # разбор старых винтов из Creo записаных транслитом
     # костыльным винтам костыльная функция
     # нужно вызывать после normalization, иначе сломается
@@ -96,7 +96,10 @@ def vint_translit_format(list_of_samples, df):
     list_of_df = []
 
     for row in list_of_samples.itertuples(index=True):
-        slice = row.container[:-3]
+        if len(row.container) > 5:
+            slice = row.container[:-3]
+        else:
+            slice = row.container
         # временный df с крепежём госта container
         temp_df = df.query('Наименование.str.contains(@slice)')
         # пересчитаем весь крепеж этого госта, чтобы потом убедиться, что ничего не потеряли
@@ -114,6 +117,7 @@ def vint_translit_format(list_of_samples, df):
         temp_df_grouped.loc[temp_df_grouped['length'] == 0, 'Размер'] = 'мелкий шаг'
         if check_sum1 != check_sum2:
             raise ValueError('потеряли', row.container)
+        temp_df_grouped['type'] = 'винт'
         list_of_df.append(temp_df_grouped)
     return pd.concat([*list_of_df]).reset_index(drop=True), df
 
@@ -129,6 +133,24 @@ def concat_translit_screws(rus_df, en_df):
     all_screws = all_screws.sort_values(by=['ГОСТ/ОСТ', 'diameter', 'length']).reset_index(drop=True)
     return all_screws
 
+
+def sort_and_delete(df):
+    df['Прим'] = ''
+    df = df.sort_values(by=['ГОСТ/ОСТ','diameter','length'],ascending=True).reset_index(drop=True)
+    return df[['Наименование','ГОСТ/ОСТ', 'Размер', 'Кол.', 'Прим']]
+
+def create_out_xls(df, df_bad):
+    fileout = filename[0:-4] + '_out.xlsx'
+    writer = pd.ExcelWriter(fileout, engine='xlsxwriter')
+    df.to_excel(writer, 'Крепёж')
+    df_bad.to_excel(writer, 'Не распозналось')
+    for sheet_name in ['Крепёж', 'Не распозналось']:
+        worksheet = writer.sheets[sheet_name]
+        worksheet.set_column(1, 1, 50)
+        worksheet.set_column(2, 2, 10)
+    writer.save()
+
+
 #начало мэйна
 
 filename = 'locator.csv'
@@ -136,7 +158,8 @@ true_dictionary = ['винт', 'гайка', 'шайба', 'штифт', 'vint',
 data = parsing_df_of_fasteners(filename, true_dictionary)
 list_of_samples = make_list_of_samples('formats.csv')
 data, bad_data = normalization(list_of_samples, data)
-print(data)
-vint, bad_data = vint_translit_format(list_of_samples, bad_data)
+vint, bad_data = vint_translit_normalization(list_of_samples, bad_data)
 data = concat_translit_screws(data,vint)
-print(data,bad_data)
+data = sort_and_delete(data)
+create_out_xls(data,bad_data)
+
