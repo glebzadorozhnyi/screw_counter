@@ -1,6 +1,5 @@
 import re
 import pandas as pd
-import numpy
 
 def make_list_of_samples(filename):
     # читаем список шаблонов крепежа в df
@@ -43,6 +42,7 @@ def get_length(row):
 
 def normalization(list_of_samples, df):
     # массив из разобранных df относящихся к разным гостам крепежа
+    list_of_samples = list_of_samples[list_of_samples['type'] != 'vint']
     list_of_df = []
     for row in list_of_samples.itertuples(index=True):
         # временный df с крепежём госта container
@@ -74,8 +74,10 @@ def normalization(list_of_samples, df):
     return pd.concat([*list_of_df]).reset_index(drop=True), df
 
 
-def vint_translit_format():
+def vint_translit_format(list_of_samples, df):
     # разбор старых винтов из Creo записаных транслитом
+    # костыльным винтам костыльная функция
+    # нужно вызывать после normalization, иначе сломается
     def M(row):
         # диаметр винта
         temp = re.search('M\d+[-_]*[56]*', row)
@@ -88,47 +90,42 @@ def vint_translit_format():
 
     def L(row):
         # длина винта
+        print(row)
         temp = re.search('X\d+', row)
         return int(temp.group()[1:])
 
-    def vint_by_gost(container, part0, part2, part3):
-        global vint
-        vint_gost = vint.query('Наименование.str.contains(@container)')
-        check_sum1 = vint_gost['Кол.'].sum()
-        vint = vint[~vint.index.isin(vint_gost.index)]
-        vint_gost['diameter'] = vint_gost['Наименование'].apply(M)
-        vint_gost['length'] = vint_gost['Наименование'].apply(L)
-        vint_grouped = vint_gost.groupby(['diameter', 'length'])['Кол.'].sum().reset_index()
-        vint_grouped['Наименование'] = part0 + vint_grouped['diameter'] + part2 + \
-                                       vint_grouped['length'].apply(str) + part3
-        vint_grouped['Размер'] = 'M' + vint_grouped['diameter'] + 'x' + vint_grouped['length'].apply(str)
-        vint_grouped['ГОСТ/ОСТ'] = container
-        check_sum2 = vint_grouped['Кол.'].sum()
+    list_of_samples = list_of_samples[list_of_samples['type'] == 'vint']
+    list_of_df = []
+
+    for row in list_of_samples.itertuples(index=True):
+        # временный df с крепежём госта container
+        temp_df = df.query('Наименование.str.contains(@row.container)')
+        # пересчитаем весь крепеж этого госта, чтобы потом убедиться, что ничего не потеряли
+        check_sum1 = temp_df['Кол.'].sum()
+        # выкидываем крепёж из исходного df, чтобы потом сделать список из неразобранного крепежа
+        df = df[~df.index.isin(temp_df.index)]
+        temp_df['diameter'] = temp_df['Наименование'].apply(M)
+        temp_df['length'] = temp_df['Наименование'].apply(L)
+        temp_df_grouped = temp_df.groupby(['diameter', 'length'])['Кол.'].sum().reset_index()
+        temp_df_grouped['Наименование'] = row.part0 + temp_df_grouped['diameter'] + row.part2 + \
+                                          temp_df_grouped['length'].apply(str) + row.part3
+        temp_df_grouped['Размер'] = 'M' + temp_df_grouped['diameter'] + 'x' + temp_df_grouped['length'].apply(str)
+        temp_df_grouped['ГОСТ/ОСТ'] = row.container
+        check_sum2 = temp_df_grouped['Кол.'].sum()
+        temp_df_grouped.loc[temp_df_grouped['length'] == 0, 'Размер'] = 'мелкий шаг'
         if check_sum1 != check_sum2:
-            raise ValueError('потеряли vint', container)
-        vint_grouped['type'] = 'винт'
-        return vint_grouped
+            raise ValueError('потеряли', row.container)
+        list_of_df.append(temp_df_grouped)
+    return pd.concat([*list_of_df]).reset_index(drop=True), df
 
-    vint4762 = vint_by_gost('4762', 'Винт ГОСТ Р ИСО 4762-M', 'x', '.A2-70')
-
-    vint1491 = vint_by_gost('1491-80', r'Винт А.М', r'-6gx', r'.58.20.016 ГОСТ 1491-80')
-
-    vint17475 = vint_by_gost('17475-80', r'Винт А.М', r'-6gx', r'.58.20.016 ГОСТ 17475-80')
-
-    vint1477 = vint_by_gost('1477-93', r'Винт A.M', r'-6gx', r'.22H.35.016 ГОСТ 1477-93')
-
-    vint1476 = vint_by_gost('1476-93', r'Винт A.M', r'-6gx', r'.23.20Х13 ГОСТ 1476-93')
-
-    vint11738 = vint_by_gost('11738-84', r'Винт M', r'-6gx', r'.23.20Х13 ГОСТ 11738-84')
-
-    all_vint = pd.concat([vint4762, vint1491, vint17475, vint1477, vint1476, vint11738]).reset_index(drop=True)
-
-    return all_vint
 
 #начало мэйна
 
 filename = 'sop_oe.csv'
-true_dictionary = ['винт', 'гайка', 'шайба', 'штифт', 'vint', 'gajka', 'shajba', 'shtift']
+true_dictionary = ['винт', 'гайка', 'шайба', 'штифт', 'vint', 'gajka', 'shajba', 'shtift'] # ключевые слова для поиска
 data = parsing_df_of_fasteners(filename, true_dictionary)
-print(normalization(make_list_of_samples('formats.csv'),data))
+list_of_samples = make_list_of_samples('formats.csv')
+data, bad_data = normalization(list_of_samples, data)
+vint, bad_data = vint_translit_format(list_of_samples, bad_data)
+print(vint, data,bad_data)
 
