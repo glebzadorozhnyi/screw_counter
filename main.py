@@ -171,28 +171,42 @@ def reformate_bad_df(df):
 def create_out_xls(df, df_bad):
     fileout = filename[0:-4] + '_out.xlsx'
     writer = pd.ExcelWriter(fileout, engine='xlsxwriter')
-    df.to_excel(writer, 'Крепёж')
-    df_bad.to_excel(writer, 'Не распозналось')
     workbook = writer.book
+    df.to_excel(writer, 'Крепёж', startrow=1)
+    df_bad.to_excel(writer, 'Не распозналось')
     border_fmt1 = workbook.add_format({'bottom': 1, 'top': 1, 'left': 1, 'right': 1})
     border_fmt2 = workbook.add_format({'bottom': 2, 'top': 2, 'left': 2, 'right': 2})
+    cell_format = workbook.add_format({'font_size': 14})
 
     for sheet_name in ['Крепёж', 'Не распозналось']:
         worksheet = writer.sheets[sheet_name]
         worksheet.set_column(1, 1, 50)
         worksheet.set_column(2, 2, 10)
         worksheet.set_default_row(20)
-        worksheet = writer.sheets[sheet_name]
 
-        if sheet_name == 'Крепёж':
-            current_df = df
-        else:
-            current_df = df_bad
 
-        worksheet.conditional_format(xlsxwriter.utility.xl_range(1, 1, len(current_df), len(current_df.columns)),
-                                     {'type': 'no_errors', 'format': border_fmt1})
-        worksheet.conditional_format(xlsxwriter.utility.xl_range(0, 0, len(current_df), len(current_df.columns)),
-                                     {'type': 'no_errors', 'format': border_fmt2})
+    # Первый лист
+    worksheet = writer.sheets['Крепёж']
+    worksheet.set_row(0,30)
+    max_row = len(df) + 1
+    max_col = len(df.columns)
+    worksheet.conditional_format(xlsxwriter.utility.xl_range(2, 1, max_row, max_col),
+                                 {'type': 'no_errors', 'format': border_fmt1})
+    worksheet.conditional_format(xlsxwriter.utility.xl_range(1, 0, max_row, max_col),
+                                 {'type': 'no_errors', 'format': border_fmt2})
+
+    worksheet.write_string(max_row+2, 1, 'Главный конструктор ОКР', cell_format=cell_format)
+    worksheet.write_string(0, 1, 'Перечень крепежных изделий для сборки опытного образца', cell_format=cell_format)
+
+
+    # Второй лист
+    worksheet = writer.sheets['Не распозналось']
+    max_row = len(df_bad)
+    max_col = len(df_bad.columns)
+    worksheet.conditional_format(xlsxwriter.utility.xl_range(1, 1, max_row, max_col),
+                                 {'type': 'no_errors', 'format': border_fmt1})
+    worksheet.conditional_format(xlsxwriter.utility.xl_range(0, 0, max_row, max_col),
+                                 {'type': 'no_errors', 'format': border_fmt2})
 
     writer.save()
 
