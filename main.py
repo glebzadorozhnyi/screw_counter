@@ -148,6 +148,7 @@ def create_out_xls(df, df_bad):
         worksheet = writer.sheets[sheet_name]
         worksheet.set_column(1, 1, 50)
         worksheet.set_column(2, 2, 10)
+        worksheet.set_default_row(20)
     writer.save()
 
 
