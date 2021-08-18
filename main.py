@@ -42,19 +42,25 @@ def get_length(row):
 
 
 def normalization(list_of_samples, df):
-    list_of_df = []  # массив из разобранных df относящихся к разным гостам крепежа
+    # массив из разобранных df относящихся к разным гостам крепежа
+    list_of_df = []
     for row in list_of_samples.itertuples(index=True):
-        temp_df = df.query('Наименование.str.contains(@row.container)') # временный df с крепежём госта container
-        check_sum1 = temp_df['Кол.'].sum() # пересчитаем весь крепеж этого госта, чтобы потом убедиться, что ничего не потеряли
-        df = df[~df.index.isin(temp_df.index)] # выкидываем крепёж из исходного df, чтобы потом сделать список из неразобранного крепежа
+        # временный df с крепежём госта container
+        temp_df = df.query('Наименование.str.contains(@row.container)')
+        # пересчитаем весь крепеж этого госта, чтобы потом убедиться, что ничего не потеряли
+        check_sum1 = temp_df['Кол.'].sum()
+        # выкидываем крепёж из исходного df, чтобы потом сделать список из неразобранного крепежа
+        df = df[~df.index.isin(temp_df.index)]
         temp_df['diameter'] = temp_df['Наименование'].apply(get_diameter, args=(row.regular_expression, row.symbols_to_delete))
-        if row.part3 != '': # если крепёж "двумерный"
+        if row.part3 != '':
+            # если крепёж "двумерный"
             temp_df['length'] = temp_df['Наименование'].apply(get_length)
             temp_df_grouped = temp_df.groupby(['diameter', 'length'])['Кол.'].sum().reset_index()
             temp_df_grouped['Наименование'] = row.part0 + temp_df_grouped['diameter'] + row.part2 + \
                                             temp_df_grouped['length'].apply(str) + row.part3
             temp_df_grouped['Размер'] = 'M' + temp_df_grouped['diameter'] + 'x' + temp_df_grouped['length'].apply(str)
-        else: # если крепёж одномерный
+        else:
+            # если крепёж "одномерный"
             temp_df_grouped = temp_df.groupby(['diameter'])['Кол.'].sum().reset_index()
             temp_df_grouped['Наименование'] = row.part0 + temp_df_grouped['diameter'] + row.part2
             temp_df_grouped['Размер'] = 'M' + temp_df_grouped['diameter']
@@ -68,8 +74,10 @@ def normalization(list_of_samples, df):
     return pd.concat([*list_of_df]).reset_index(drop=True), df
 
 
-def vint_translit_format():  # разбор старых винтов из Creo записаных транслитом
-    def M(row):  # диаметр винта
+def vint_translit_format():
+    # разбор старых винтов из Creo записаных транслитом
+    def M(row):
+        # диаметр винта
         temp = re.search('M\d+[-_]*[56]*', row)
         anwser = temp.group()[1:]
         anwser = anwser.replace('_', '.')
@@ -78,7 +86,8 @@ def vint_translit_format():  # разбор старых винтов из Creo 
             anwser = anwser[0]
         return anwser
 
-    def L(row):  # длина винта
+    def L(row):
+        # длина винта
         temp = re.search('X\d+', row)
         return int(temp.group()[1:])
 
