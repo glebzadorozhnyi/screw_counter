@@ -160,12 +160,22 @@ def sort_and_delete(df):
     return df[['Наименование','ГОСТ/ОСТ', 'Размер', 'Кол.', 'Прим']]
 
 
+def reformate_bad_df(df):
+    df.columns = ['Наименование', 'Кол.', 'Тип']
+    df = df.reset_index(drop=True)
+    df.index.rename('№', inplace=True)
+    df.index += 1
+    return df
+
+
 def create_out_xls(df, df_bad):
     fileout = filename[0:-4] + '_out.xlsx'
     writer = pd.ExcelWriter(fileout, engine='xlsxwriter')
     df.to_excel(writer, 'Крепёж')
     df_bad.to_excel(writer, 'Не распозналось')
     workbook = writer.book
+    border_fmt1 = workbook.add_format({'bottom': 1, 'top': 1, 'left': 1, 'right': 1})
+    border_fmt2 = workbook.add_format({'bottom': 2, 'top': 2, 'left': 2, 'right': 2})
 
     for sheet_name in ['Крепёж', 'Не распозналось']:
         worksheet = writer.sheets[sheet_name]
@@ -173,11 +183,15 @@ def create_out_xls(df, df_bad):
         worksheet.set_column(2, 2, 10)
         worksheet.set_default_row(20)
         worksheet = writer.sheets[sheet_name]
-        border_fmt1 = workbook.add_format({'bottom': 1, 'top': 1, 'left': 1, 'right': 1})
-        border_fmt2 = workbook.add_format({'bottom': 2, 'top': 2, 'left': 2, 'right': 2})
-        worksheet.conditional_format(xlsxwriter.utility.xl_range(1, 1, len(df), len(df.columns)),
+
+        if sheet_name == 'Крепёж':
+            current_df = df
+        else:
+            current_df = df_bad
+
+        worksheet.conditional_format(xlsxwriter.utility.xl_range(1, 1, len(current_df), len(current_df.columns)),
                                      {'type': 'no_errors', 'format': border_fmt1})
-        worksheet.conditional_format(xlsxwriter.utility.xl_range(0, 0, len(df), len(df.columns)),
+        worksheet.conditional_format(xlsxwriter.utility.xl_range(0, 0, len(current_df), len(current_df.columns)),
                                      {'type': 'no_errors', 'format': border_fmt2})
 
     writer.save()
@@ -193,5 +207,6 @@ data, bad_data = normalization(list_of_samples, data)
 vint, bad_data = vint_translit_normalization(list_of_samples, bad_data)
 data = concat_translit_screws(data,vint)
 data = sort_and_delete(data)
+bad_data = reformate_bad_df(bad_data)
 create_out_xls(data,bad_data)
 
