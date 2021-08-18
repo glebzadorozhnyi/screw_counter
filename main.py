@@ -35,7 +35,6 @@ def get_diameter(row, regular_expression, symbols_to_delete):
 
 
 def get_length(row):
-    # длина винта или штифта
     temp = re.search('[xх]\d+', row)
     return int(temp.group()[1:])
 
@@ -46,7 +45,7 @@ def normalization(list_of_samples, df):
     list_of_df = []
     for row in list_of_samples.itertuples(index=True):
         # временный df с крепежём госта container
-        temp_df = df.query('Наименование.str.contains(@row.container)')
+        temp_df = df.query('Наименование.str.contains(@row.container) and ~Наименование.str.lower().str.contains("vint")')
         # пересчитаем весь крепеж этого госта, чтобы потом убедиться, что ничего не потеряли
         check_sum1 = temp_df['Кол.'].sum()
         # выкидываем крепёж из исходного df, чтобы потом сделать список из неразобранного крепежа
@@ -90,7 +89,6 @@ def vint_translit_format(list_of_samples, df):
 
     def L(row):
         # длина винта
-        print(row)
         temp = re.search('X\d+', row)
         return int(temp.group()[1:])
 
@@ -98,8 +96,9 @@ def vint_translit_format(list_of_samples, df):
     list_of_df = []
 
     for row in list_of_samples.itertuples(index=True):
+        slice = row.container[:-3]
         # временный df с крепежём госта container
-        temp_df = df.query('Наименование.str.contains(@row.container)')
+        temp_df = df.query('Наименование.str.contains(@slice)')
         # пересчитаем весь крепеж этого госта, чтобы потом убедиться, что ничего не потеряли
         check_sum1 = temp_df['Кол.'].sum()
         # выкидываем крепёж из исходного df, чтобы потом сделать список из неразобранного крепежа
@@ -119,13 +118,25 @@ def vint_translit_format(list_of_samples, df):
     return pd.concat([*list_of_df]).reset_index(drop=True), df
 
 
+def concat_translit_screws(rus_df, en_df):
+    # присоединяем костыльные винты к нормальным
+    all_screws = pd.concat([rus_df, en_df]).reset_index(drop=True)
+    duplicates = all_screws.groupby('Наименование')['Кол.'].sum()
+    all_screws = all_screws.merge(duplicates, on='Наименование', how='left')
+    all_screws = all_screws[['diameter', 'length', 'Размер', 'ГОСТ/ОСТ', 'Кол._y', 'Наименование']]
+    all_screws.columns = ['diameter', 'length', 'Размер', 'ГОСТ/ОСТ', 'Кол.', 'Наименование']
+    all_screws = all_screws.drop_duplicates('Наименование')
+    all_screws = all_screws.sort_values(by=['ГОСТ/ОСТ', 'diameter', 'length']).reset_index(drop=True)
+    return all_screws
+
 #начало мэйна
 
-filename = 'sop_oe.csv'
+filename = 'locator.csv'
 true_dictionary = ['винт', 'гайка', 'шайба', 'штифт', 'vint', 'gajka', 'shajba', 'shtift'] # ключевые слова для поиска
 data = parsing_df_of_fasteners(filename, true_dictionary)
 list_of_samples = make_list_of_samples('formats.csv')
 data, bad_data = normalization(list_of_samples, data)
+print(data)
 vint, bad_data = vint_translit_format(list_of_samples, bad_data)
-print(vint, data,bad_data)
-
+data = concat_translit_screws(data,vint)
+print(data,bad_data)
