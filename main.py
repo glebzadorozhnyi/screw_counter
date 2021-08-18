@@ -1,6 +1,10 @@
 import re
 import pandas as pd
 
+def read_list_of_keywords(filename):
+    with open(filename) as f:
+        return f.readline().split()
+
 def make_list_of_samples(filename):
     # читаем список шаблонов крепежа в df
     return pd.read_csv(filename, encoding='ANSI', sep=';').fillna('')
@@ -150,7 +154,9 @@ def sort_and_delete(df):
     df['Прим'] = ''
     df = df.sort_values(by=['type','ГОСТ/ОСТ','diameter','length'],ascending=True, key=custom_sorting).reset_index(drop=True)
     df.loc[df['Размер'] == 'мелкий шаг', ['Прим']] = 'скрипт не обрабатывает мелкий шаг. нужно вручную вбивать этот винт'
+    df.index += 1
     return df[['Наименование','ГОСТ/ОСТ', 'Размер', 'Кол.', 'Прим']]
+
 
 def create_out_xls(df, df_bad):
     fileout = filename[0:-4] + '_out.xlsx'
@@ -168,8 +174,8 @@ def create_out_xls(df, df_bad):
 #начало мэйна
 
 filename = 'locator.csv'
-true_dictionary = ['винт', 'гайка', 'шайба', 'штифт', 'vint', 'gajka', 'shajba', 'shtift'] # ключевые слова для поиска
-data = parsing_df_of_fasteners(filename, true_dictionary)
+keywords = read_list_of_keywords('keywords.txt')
+data = parsing_df_of_fasteners(filename, keywords)
 list_of_samples = make_list_of_samples('formats.csv')
 data, bad_data = normalization(list_of_samples, data)
 vint, bad_data = vint_translit_normalization(list_of_samples, bad_data)
