@@ -1,9 +1,10 @@
 import re
 import pandas as pd
+import numpy
 
 def make_list_of_samples(filename):
     # читаем список шаблонов крепежа в df
-    return pd.read_csv(filename, encoding='ANSI', sep=';')
+    return pd.read_csv(filename, encoding='ANSI', sep=';').fillna('')
 
 
 def parsing_df_of_fasteners(filename, dictionary):
@@ -41,54 +42,30 @@ def get_length(row):
 
 
 def normalization(list_of_samples, df):
-    list_2d = list_of_samples.query('type == ("винт", "штифт", "болт")') # двумерный крепёж (диаметр + длина)
-    list_1d = list_of_samples.query('type == ("гайка", "шайба")') # одномерный крепёж (диаметр)
-
-    def normalization_2d(list_2d, df):
-        list_of_df = []  # массив из разобранных df относящихся к разным гостам крепежа
-        for row in list_2d.itertuples(index=True):
-            temp_df = df.query('Наименование.str.contains(@row.container)') # временный df с крепежём госта container
-            check_sum1 = temp_df['Кол.'].sum() # пересчитаем весь крепеж этого госта, чтобы потом убедиться, что ничего не потеряли
-            df = df[~df.index.isin(temp_df.index)] # выкидываем крепёж из исходного df, чтобы потом сделать список из неразобранного крепежа
-            temp_df['diameter'] = temp_df['Наименование'].apply(get_diameter, args=(row.regular_expression, row.symbols_to_delete))
+    list_of_df = []  # массив из разобранных df относящихся к разным гостам крепежа
+    for row in list_of_samples.itertuples(index=True):
+        temp_df = df.query('Наименование.str.contains(@row.container)') # временный df с крепежём госта container
+        check_sum1 = temp_df['Кол.'].sum() # пересчитаем весь крепеж этого госта, чтобы потом убедиться, что ничего не потеряли
+        df = df[~df.index.isin(temp_df.index)] # выкидываем крепёж из исходного df, чтобы потом сделать список из неразобранного крепежа
+        temp_df['diameter'] = temp_df['Наименование'].apply(get_diameter, args=(row.regular_expression, row.symbols_to_delete))
+        if row.part3 != '': # если крепёж "двумерный"
             temp_df['length'] = temp_df['Наименование'].apply(get_length)
             temp_df_grouped = temp_df.groupby(['diameter', 'length'])['Кол.'].sum().reset_index()
             temp_df_grouped['Наименование'] = row.part0 + temp_df_grouped['diameter'] + row.part2 + \
                                             temp_df_grouped['length'].apply(str) + row.part3
-            temp_df_grouped['Размер'] = 'M' + temp_df_grouped['diameter'] + 'x' + temp_df_grouped[
-                'length'].apply(
-                str)
-            temp_df_grouped['ГОСТ/ОСТ'] = row.container
-            check_sum2 = temp_df_grouped['Кол.'].sum()
-            temp_df_grouped.loc[temp_df_grouped['length'] == 0, 'Размер'] = 'мелкий шаг'
-            if check_sum1 != check_sum2:
-                raise ValueError('потеряли', row.container)
-            list_of_df.append(temp_df_grouped)
-        return pd.concat([*list_of_df]).reset_index(drop=True), df
-
-    def normalization_1d(list_1d,df):
-        list_of_df = []
-        for row in list_1d.itertuples(index=True):
-            temp_df = df.query('Наименование.str.contains(@row.container)')
-            check_sum1 = temp_df['Кол.'].sum()
-            df = df[~df.index.isin(temp_df.index)]
-            temp_df['diameter'] = temp_df['Наименование'].apply(get_diameter,
-                                                                args=(row.regular_expression, row.symbols_to_delete))
-            temp_df_grouped = temp_df.groupby(['diameter'])['Кол.'].sum().reset_index() # отличия
-            temp_df_grouped['Наименование'] = row.part0 + temp_df_grouped['diameter'] + row.part2 # отличия
-            temp_df_grouped['Размер'] = 'M' + temp_df_grouped['diameter'] # отличия
-            temp_df_grouped['ГОСТ/ОСТ'] = row.container
-            check_sum2 = temp_df_grouped['Кол.'].sum()
-            # отличия
-            if check_sum1 != check_sum2:
-                raise ValueError('потеряли', row.container)
-            list_of_df.append(temp_df_grouped)
-        return pd.concat([*list_of_df]).reset_index(drop=True), df
-
-    fasteners_2d,df = normalization_2d(list_2d,df)
-    fasteners_1d,df = normalization_1d(list_1d,df)
-    fasteners = pd.concat([fasteners_2d,fasteners_1d]).reset_index(drop=True)
-    return fasteners,df
+            temp_df_grouped['Размер'] = 'M' + temp_df_grouped['diameter'] + 'x' + temp_df_grouped['length'].apply(str)
+        else: # если крепёж одномерный
+            temp_df_grouped = temp_df.groupby(['diameter'])['Кол.'].sum().reset_index()
+            temp_df_grouped['Наименование'] = row.part0 + temp_df_grouped['diameter'] + row.part2
+            temp_df_grouped['Размер'] = 'M' + temp_df_grouped['diameter']
+            temp_df_grouped['length'] = ''
+        temp_df_grouped['ГОСТ/ОСТ'] = row.container
+        check_sum2 = temp_df_grouped['Кол.'].sum()
+        temp_df_grouped.loc[temp_df_grouped['length'] == 0, 'Размер'] = 'мелкий шаг'
+        if check_sum1 != check_sum2:
+            raise ValueError('потеряли', row.container)
+        list_of_df.append(temp_df_grouped)
+    return pd.concat([*list_of_df]).reset_index(drop=True), df
 
 
 def vint_translit_format():  # разбор старых винтов из Creo записаных транслитом
