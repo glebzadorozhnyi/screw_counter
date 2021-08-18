@@ -65,6 +65,7 @@ def normalization(list_of_samples, df):
             temp_df_grouped['Размер'] = 'M' + temp_df_grouped['diameter']
             temp_df_grouped['length'] = ''
         temp_df_grouped['ГОСТ/ОСТ'] = row.container
+        temp_df_grouped['type'] = row.type
         check_sum2 = temp_df_grouped['Кол.'].sum()
         temp_df_grouped.loc[temp_df_grouped['length'] == 0, 'Размер'] = 'мелкий шаг'
         if check_sum1 != check_sum2:
@@ -127,16 +128,27 @@ def concat_translit_screws(rus_df, en_df):
     all_screws = pd.concat([rus_df, en_df]).reset_index(drop=True)
     duplicates = all_screws.groupby('Наименование')['Кол.'].sum()
     all_screws = all_screws.merge(duplicates, on='Наименование', how='left')
-    all_screws = all_screws[['diameter', 'length', 'Размер', 'ГОСТ/ОСТ', 'Кол._y', 'Наименование']]
-    all_screws.columns = ['diameter', 'length', 'Размер', 'ГОСТ/ОСТ', 'Кол.', 'Наименование']
+    all_screws = all_screws[['type', 'diameter', 'length', 'Размер', 'ГОСТ/ОСТ', 'Кол._y', 'Наименование']]
+    all_screws.columns = ['type', 'diameter', 'length', 'Размер', 'ГОСТ/ОСТ', 'Кол.', 'Наименование']
     all_screws = all_screws.drop_duplicates('Наименование')
-    all_screws = all_screws.sort_values(by=['ГОСТ/ОСТ', 'diameter', 'length']).reset_index(drop=True)
+    all_screws = all_screws.reset_index(drop=True)
     return all_screws
 
 
 def sort_and_delete(df):
+
+    def custom_sorting(col: pd.Series):
+        to_ret = col
+        if col.name == "ГОСТ/ОСТ":
+            order = col.value_counts()
+            order_number = 0
+            for index, value in order.items():
+                to_ret.loc[to_ret == index] = order_number
+                order_number += 1
+        return to_ret
+
     df['Прим'] = ''
-    df = df.sort_values(by=['ГОСТ/ОСТ','diameter','length'],ascending=True).reset_index(drop=True)
+    df = df.sort_values(by=['type','ГОСТ/ОСТ','diameter','length'],ascending=True, key=custom_sorting).reset_index(drop=True)
     df.loc[df['Размер'] == 'мелкий шаг', ['Прим']] = 'скрипт не обрабатывает мелкий шаг. нужно вручную вбивать этот винт'
     return df[['Наименование','ГОСТ/ОСТ', 'Размер', 'Кол.', 'Прим']]
 
