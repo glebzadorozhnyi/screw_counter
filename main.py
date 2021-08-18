@@ -137,6 +137,7 @@ def concat_translit_screws(rus_df, en_df):
 def sort_and_delete(df):
     df['Прим'] = ''
     df = df.sort_values(by=['ГОСТ/ОСТ','diameter','length'],ascending=True).reset_index(drop=True)
+    df.loc[df['Размер'] == 'мелкий шаг', ['Прим']] = 'скрипт не обрабатывает мелкий шаг. нужно вручную вбивать этот винт'
     return df[['Наименование','ГОСТ/ОСТ', 'Размер', 'Кол.', 'Прим']]
 
 def create_out_xls(df, df_bad):
