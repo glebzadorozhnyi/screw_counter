@@ -2,9 +2,11 @@ import re
 import pandas as pd
 import xlsxwriter
 
+
 def read_list_of_keywords(filename):
     with open(filename) as f:
         return f.readline().split()
+
 
 def make_list_of_samples(filename):
     # читаем список шаблонов крепежа в df
@@ -19,7 +21,8 @@ def parsing_df_of_fasteners(filename, dictionary):
     data.columns = ['Наименование', 'Кол']
     list_of_df = []
     for type in dictionary:
-        temp_df = data.query('Наименование.str.lower().str.contains(@type) and ~Наименование.str.lower().str.contains("пакб")')
+        temp_df = data.query(
+            'Наименование.str.lower().str.contains(@type) and ~Наименование.str.lower().str.contains("пакб")')
         temp_df['type'] = type
         if len(temp_df) > 0:
             list_of_df.append(temp_df)
@@ -50,18 +53,20 @@ def normalization(list_of_samples, df):
     list_of_df = []
     for row in list_of_samples.itertuples(index=True):
         # временный df с крепежём госта container
-        temp_df = df.query('Наименование.str.contains(@row.container) and ~Наименование.str.lower().str.contains("vint")')
+        temp_df = df.query(
+            'Наименование.str.contains(@row.container) and ~Наименование.str.lower().str.contains("vint")')
         # пересчитаем весь крепеж этого госта, чтобы потом убедиться, что ничего не потеряли
         check_sum1 = temp_df['Кол'].sum()
         # выкидываем крепёж из исходного df, чтобы потом сделать список из неразобранного крепежа
         df = df[~df.index.isin(temp_df.index)]
-        temp_df['diameter'] = temp_df['Наименование'].apply(get_diameter, args=(row.regular_expression, row.symbols_to_delete))
+        temp_df['diameter'] = temp_df['Наименование'].apply(get_diameter,
+                                                            args=(row.regular_expression, row.symbols_to_delete))
         if row.part3 != '':
             # если крепёж "двумерный"
             temp_df['length'] = temp_df['Наименование'].apply(get_length)
             temp_df_grouped = temp_df.groupby(['diameter', 'length'])['Кол'].sum().reset_index()
             temp_df_grouped['Наименование'] = row.part0 + temp_df_grouped['diameter'] + row.part2 + \
-                                            temp_df_grouped['length'].apply(str) + row.part3
+                                              temp_df_grouped['length'].apply(str) + row.part3
             temp_df_grouped['Размер'] = 'M' + temp_df_grouped['diameter'] + 'x' + temp_df_grouped['length'].apply(str)
         else:
             # если крепёж "одномерный"
@@ -141,7 +146,6 @@ def concat_translit_screws(rus_df, en_df):
 
 
 def sort_and_delete(df):
-
     def custom_sorting(col: pd.Series):
         to_ret = col
         if col.name == "ГОСТ/ОСТ":
@@ -153,11 +157,13 @@ def sort_and_delete(df):
         return to_ret
 
     df['Прим'] = ''
-    df = df.sort_values(by=['type','ГОСТ/ОСТ','diameter','length'],ascending=True, key=custom_sorting).reset_index(drop=True)
-    df.loc[df['Размер'] == 'мелкий шаг', ['Прим']] = 'скрипт не обрабатывает мелкий шаг. нужно вручную вбивать этот винт'
+    df = df.sort_values(by=['type', 'ГОСТ/ОСТ', 'diameter', 'length'], ascending=True, key=custom_sorting).reset_index(
+        drop=True)
+    df.loc[
+        df['Размер'] == 'мелкий шаг', ['Прим']] = 'скрипт не обрабатывает мелкий шаг. нужно вручную вбивать этот винт'
     df.index += 1
     df.index.rename('№', inplace=True)
-    return df[['Наименование','ГОСТ/ОСТ', 'Размер', 'Кол', 'Прим']]
+    return df[['Наименование', 'ГОСТ/ОСТ', 'Размер', 'Кол', 'Прим']]
 
 
 def reformate_bad_df(df):
@@ -185,11 +191,10 @@ def create_out_xls(df, df_bad):
         worksheet.set_column(2, 2, 10)
         worksheet.set_default_row(20)
 
-
     # Первый лист
 
     worksheet = writer.sheets['Крепёж']
-    worksheet.set_row(0,30)
+    worksheet.set_row(0, 30)
     max_row = len(df) + 1
     max_col = len(df.columns)
 
@@ -202,12 +207,11 @@ def create_out_xls(df, df_bad):
     worksheet.conditional_format(xlsxwriter.utility.xl_range(1, 0, max_row, max_col),
                                  {'type': 'no_errors', 'format': border_fmt2})
 
-    worksheet.write_string(max_row+2, 1, 'Главный конструктор ОКР', cell_format=cell_format)
+    worksheet.write_string(max_row + 2, 1, 'Главный конструктор ОКР', cell_format=cell_format)
     worksheet.write_string(0, 0, 'Перечень крепежных изделий для сборки опытного образца', cell_format=cell_format)
 
-
     # Второй лист
-    
+
     worksheet = writer.sheets['Не распозналось']
     max_row = len(df_bad)
     max_col = len(df_bad.columns)
@@ -219,7 +223,7 @@ def create_out_xls(df, df_bad):
     writer.save()
 
 
-#начало мэйна
+# начало мэйна
 
 filename = 'locator.csv'
 keywords = read_list_of_keywords('keywords.txt')
@@ -227,8 +231,7 @@ data = parsing_df_of_fasteners(filename, keywords)
 list_of_samples = make_list_of_samples('formats.csv')
 data, bad_data = normalization(list_of_samples, data)
 vint, bad_data = vint_translit_normalization(list_of_samples, bad_data)
-data = concat_translit_screws(data,vint)
+data = concat_translit_screws(data, vint)
 data = sort_and_delete(data)
 bad_data = reformate_bad_df(bad_data)
-create_out_xls(data,bad_data)
-
+create_out_xls(data, bad_data)
