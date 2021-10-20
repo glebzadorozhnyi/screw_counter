@@ -221,7 +221,7 @@ def create_out_xls(df, df_bad):
 
 #начало мэйна
 
-filename = 'locator.csv'
+filename = 'multik.csv'
 keywords = read_list_of_keywords('keywords.txt')
 data = parsing_df_of_fasteners(filename, keywords)
 list_of_samples = make_list_of_samples('formats.csv')
