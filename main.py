@@ -70,6 +70,7 @@ def normalization(list_of_samples, df):
             temp_df_grouped['Размер'] = 'M' + temp_df_grouped['diameter']
             temp_df_grouped['length'] = ''
         temp_df_grouped['ГОСТ/ОСТ'] = row.container
+        temp_df_grouped['DIN'] = row.din_analog
         temp_df_grouped['type'] = row.type
         check_sum2 = temp_df_grouped['Кол'].sum()
         temp_df_grouped.loc[temp_df_grouped['length'] == 0, 'Размер'] = 'мелкий шаг'
@@ -119,6 +120,7 @@ def vint_translit_normalization(list_of_samples, df):
                                           temp_df_grouped['length'].apply(str) + row.part3
         temp_df_grouped['Размер'] = 'M' + temp_df_grouped['diameter'] + 'x' + temp_df_grouped['length'].apply(str)
         temp_df_grouped['ГОСТ/ОСТ'] = row.container
+        temp_df_grouped['DIN'] = row.din_analog
         check_sum2 = temp_df_grouped['Кол'].sum()
         temp_df_grouped.loc[temp_df_grouped['length'] == 0, 'Размер'] = 'мелкий шаг'
         if check_sum1 != check_sum2:
@@ -133,8 +135,8 @@ def concat_translit_screws(rus_df, en_df):
     all_screws = pd.concat([rus_df, en_df]).reset_index(drop=True)
     duplicates = all_screws.groupby('Наименование')['Кол'].sum()
     all_screws = all_screws.merge(duplicates, on='Наименование', how='left')
-    all_screws = all_screws[['type', 'diameter', 'length', 'Размер', 'ГОСТ/ОСТ', 'Кол_y', 'Наименование']]
-    all_screws.columns = ['type', 'diameter', 'length', 'Размер', 'ГОСТ/ОСТ', 'Кол', 'Наименование']
+    all_screws = all_screws[['type', 'diameter', 'length', 'Размер', 'ГОСТ/ОСТ', 'DIN', 'Кол_y', 'Наименование']]
+    all_screws.columns = ['type', 'diameter', 'length', 'Размер', 'ГОСТ/ОСТ', 'DIN', 'Кол', 'Наименование']
     all_screws = all_screws.drop_duplicates('Наименование')
     all_screws = all_screws.reset_index(drop=True)
     return all_screws
@@ -157,7 +159,7 @@ def sort_and_delete(df):
     df.loc[df['Размер'] == 'мелкий шаг', ['Прим']] = 'скрипт не обрабатывает мелкий шаг. нужно вручную вбивать этот винт'
     df.index += 1
     df.index.rename('№', inplace=True)
-    return df[['Наименование','ГОСТ/ОСТ', 'Размер', 'Кол', 'Прим']]
+    return df[['Наименование','ГОСТ/ОСТ', 'DIN', 'Размер', 'Кол', 'Прим']]
 
 
 def reformate_bad_df(df):
@@ -169,6 +171,7 @@ def reformate_bad_df(df):
 
 
 def create_out_xls(df, df_bad):
+    df_bad = df_bad.drop('Тип', 1)
     fileout = filename[0:-4] + '_out.xlsx'
     writer = pd.ExcelWriter(fileout, engine='xlsxwriter')
     workbook = writer.book
@@ -178,11 +181,18 @@ def create_out_xls(df, df_bad):
     border_fmt2 = workbook.add_format({'bottom': 2, 'top': 2, 'left': 2, 'right': 2})
     cell_format = workbook.add_format({'font_size': 14})
     cell_format.set_align('vcenter')
+    cell_format2 = workbook.add_format()
+    cell_format2.set_align('left')
+    cell_format3 = workbook.add_format()
+    cell_format3.set_align('center')
+
 
     for sheet_name in ['Крепёж', 'Не распозналось']:
         worksheet = writer.sheets[sheet_name]
         worksheet.set_column(1, 1, 50)
         worksheet.set_column(2, 2, 10)
+        worksheet.set_column(3, 3, 6, cell_format=cell_format2)
+        worksheet.set_column(5, 5, 8.43, cell_format=cell_format3)
         worksheet.set_default_row(20)
 
 
@@ -215,6 +225,7 @@ def create_out_xls(df, df_bad):
                                  {'type': 'no_errors', 'format': border_fmt1})
     worksheet.conditional_format(xlsxwriter.utility.xl_range(0, 0, max_row, max_col),
                                  {'type': 'no_errors', 'format': border_fmt2})
+
 
     writer.save()
 
