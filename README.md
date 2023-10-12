@@ -1,3 +1,15 @@
-screw_counter generates beautiful xls file with fasteners by parsing raw csv file from solidworks. csv contains awful soup of fasteners in different formats, parts, assemblies and trash
+screw_counter принимает на вход csv файл-выгрузку из САПР для 3D проектирования "Solidworks".
+CSV содержит тысячи строк и два столбца: наименование составной части изделия, количество.
+На выходе screw_counter выдаёт excel файл - заявку на покупку крепёжных изделий (винты, гайки, шайбы и прочее).
 
-trash soup in sop_oe.csv for example
+В исходном csv файле большинство строк не относится к крепёжным изделиям. Маркировки крепежей различных стандартов отличаются друг от друга.
+screw_counter отбрасывает лишние строки, расшифровывает маркировки и создаёт заявку, которую удобно читать сотруднику отдела закупок.
+
+В программе применяются: Pandas, регулярные выражения, xlsxwritter
+
+
+
+
+[Пример входного файла (фрагмент)](https://github.com/glebzadorozhnyi/screw_counter/blob/master/%D1%84%D1%80%D0%B0%D0%B3%D0%BC%D0%B5%D0%BD%D1%82%20%D0%B2%D1%85%D0%BE%D0%B4%D0%BD%D0%BE%D0%B3%D0%BE%20%D1%84%D0%B0%D0%B9%D0%BB%D0%B0.png?raw=true)
+
+[Пример выходного файла](https://github.com/glebzadorozhnyi/screw_counter/blob/ea08dde785112bfabd7bb96590053da0ca0a80ce/%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%20%D0%B2%D1%8B%D1%85%D0%BE%D0%B4%D0%BD%D0%BE%D0%B3%D0%BE%20%D1%84%D0%B0%D0%B9%D0%BB%D0%B0.pdf)
